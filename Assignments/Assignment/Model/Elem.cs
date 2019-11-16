@@ -18,8 +18,6 @@ namespace Assignment.Model
 
         public Type Type { get { return ty; } }
 
-       
-
         public Elem()
         {
             id = -1;

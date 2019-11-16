@@ -60,6 +60,12 @@
     <Compile Include="Model\Ship.cs" />
     <Compile Include="Model\ShipCreateEvent.cs" />
     <Compile Include="Model\ShipMoveEvent.cs" />
+    <Compile Include="View\AskGameStart.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="View\AskGameStart.Designer.cs">
+      <DependentUpon>AskGameStart.cs</DependentUpon>
+    </Compile>
     <Compile Include="View\BaseButton.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -80,6 +86,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="View\AskGameStart.resx">
+      <DependentUpon>AskGameStart.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="View\Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

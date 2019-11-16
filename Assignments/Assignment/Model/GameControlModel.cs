@@ -15,7 +15,6 @@ namespace Assignment.Model
         private List<Ship> _ships;
         private Random _rand;
         private Player _player;
-        private List<int> _shipID;
         private int _bombIDCount;
         private List<Bomb> _bombs;
         private Timer _difficultyTimer;
@@ -30,6 +29,7 @@ namespace Assignment.Model
         public EventHandler<ShipCreateEvent> shipCreate;
         public EventHandler<BombCreateEvent> bombCreate;
         public EventHandler<BombRemoveEvent> bombRemove;
+        public EventHandler<PlayerMoveEvent> playerMove;
 
         
         public int FindBomb(List<Bomb> cont, int id) 
@@ -103,8 +103,8 @@ namespace Assignment.Model
         {
             if (gameOver != null)
             {
-                gameOver(this, new GameOverEvent(currTime));
                 StopGame();
+                gameOver(this, new GameOverEvent(currTime));
             }
         }
 
@@ -113,7 +113,7 @@ namespace Assignment.Model
             _difficultyTimer.Interval = _difficultyTimer.Interval - 5;
             Console.WriteLine("Difficulty: " + _difficultyTimer.Interval);
             _gameTime += 1;
-            MoveShips(1);
+            MoveShips();
         }
 
         private void OnDifficultyTimerElapsed(object sender, EventArgs e)
@@ -131,6 +131,7 @@ namespace Assignment.Model
         {
             _player.Move(direct);
             CheckCollision();
+            playerMove(this, new PlayerMoveEvent(new Position(_player.Position)));
         }
 
         private void CheckCollision()
@@ -140,33 +141,32 @@ namespace Assignment.Model
                 if (b.Pos._x == _player.Position._x && b.Pos._y == _player.Position._y)
                 {
                     OnGameOverEvent(_gameTime);
-                    //StopGame(); TODO check if this works
+                    return;
                 }
             }
         }
 
-        private void MoveShips(int move)
+        private void MoveShips()
         {
             foreach (var s in _ships)
             {
+                int move = _rand.Next(0, 3);
                 s.Move(move);
                 OnShipMoveEvent(s);
             }
         }       
 
-       public GameControlModel(int mapSize)
+       public GameControlModel()
         {
             _gameTimer = new Timer(1000);
             _gameTimer.Elapsed += new ElapsedEventHandler(OnTimerElapsed);
-            _mapSize = mapSize;
             _ships = new List<Ship>();
             _rand = new Random();
-            _shipID = new List<int>();
             _bombs = new List<Bomb>();
             _difficultyTimer = new Timer(1000);
             _difficultyTimer.Elapsed += new ElapsedEventHandler(OnDifficultyTimerElapsed);
 
-    }
+        }
 
         public void StopGame()
         {
@@ -189,8 +189,21 @@ namespace Assignment.Model
             }
         }
 
-        public void NewGame(int playerX, int playerY, int shipNumber)
+        public void NewGame(int mapSize, int playerX, int playerY, int shipNumber)
         {
+            _gameTime = 0;
+            _gameTimer.Enabled = false;
+            _difficultyTimer.Interval = 1000;
+            _difficultyTimer.Enabled = false;
+            _mapSize = mapSize;
+            if (shipNumber >= mapSize) 
+            {
+                shipNumber = mapSize - 1;
+                Console.WriteLine("Change shipNumber");
+            }
+            _ships.Clear();
+            _bombs.Clear();
+
             _bombIDCount = 0;
             _player = new Player(playerX, playerY, _mapSize);
             List<int> shipX = new List<int>();

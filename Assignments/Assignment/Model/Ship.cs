@@ -16,7 +16,7 @@ namespace Assignment.Model
         private Direction _direct;
         private Random _rand;
         private int _mapEnd;
-        private int _id;        
+        private int _id;
 
         public int ID { get { return _id; } }
 
