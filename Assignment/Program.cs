@@ -17,7 +17,9 @@ namespace Assignment
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            var myapp = new Form1();
+            if (!myapp.IsDisposed)
+                Application.Run(myapp);
         }
     }
 }

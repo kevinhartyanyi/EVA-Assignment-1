@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -14,9 +15,15 @@ namespace Assignment.View
     {
         private int _shipNumber;
         private int _mapSize;
+        private string _loadGame = "";
+        private bool _closeGame = true;
 
         public int ShipNumber { get { return _shipNumber; } }
+        public string LoadGame { get { return _loadGame; } }
+
         public int MapSize { get { return _mapSize; } }
+
+        public bool CloseGame { get { return _closeGame; } }
 
         private NumericUpDown shipNumber;
         private NumericUpDown mapSize;
@@ -32,10 +39,36 @@ namespace Assignment.View
 
         void OnOKClickedEvent(object sender, EventArgs e)
         {
+            _closeGame = false;
             this.Close();
         }
 
-        public AskGameStart()
+        void OnFormClosingEvent(object sender, FormClosedEventArgs e)
+        {
+            Console.WriteLine(_closeGame);
+
+        }
+
+
+        void OnGameLoadgEvent(object sender, EventArgs e)
+        {
+            Console.WriteLine("Load Game");
+            string fileName = "";
+            var t = new Thread((ThreadStart)(() => {
+                OpenFileDialog sFile = new OpenFileDialog();
+                sFile.Filter = "Save files (*.saveGame)|*.saveGame";
+                sFile.ShowDialog();
+                fileName = sFile.FileName;
+                _loadGame = fileName;
+            }));
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            t.Join();
+            if(fileName != "")
+                this.Close();
+        }
+
+        public AskGameStart(int gameTime)
         {
             InitializeComponent();
             _shipNumber = 1;
@@ -88,10 +121,37 @@ namespace Assignment.View
             ok.Click += new EventHandler(OnOKClickedEvent);
             buttonPanel.Controls.Add(ok);
 
+            Panel gameStatPanel = new Panel();
+            gameStatPanel.Dock = DockStyle.Top;
+            Label gameStat = new Label();
+            gameStat.Font = new Font("Arial", 24, FontStyle.Bold);
+            if (gameTime == -1)
+                gameStat.Text = "Start a new game";
+            else
+                gameStat.Text = "You survived for: " + gameTime + " seconds";
+            gameStat.Dock = DockStyle.Fill;
+            gameStat.TextAlign = ContentAlignment.MiddleCenter;
+            gameStatPanel.Controls.Add(gameStat);
+
+            Panel gameLoadPanel = new Panel();
+            gameLoadPanel.Dock = DockStyle.Right;
+            Button gameLoad = new Button();
+            gameLoad.Font = new Font("Arial", 14, FontStyle.Bold);
+            gameLoad.Text = "Load Game";
+            gameLoad.Dock = DockStyle.Fill;
+            gameLoad.TextAlign = ContentAlignment.MiddleCenter;
+            gameLoad.Click += new EventHandler(OnGameLoadgEvent);
+            gameLoadPanel.Controls.Add(gameLoad);
+
             this.Controls.Add(buttonPanel);
             this.Controls.Add(shipInfo);
             this.Controls.Add(mapInfo);
+            this.Controls.Add(gameStatPanel);
+            this.Controls.Add(gameLoadPanel);
+
+            this.FormClosed += new FormClosedEventHandler(OnFormClosingEvent);
 
         }
+
     }
 }

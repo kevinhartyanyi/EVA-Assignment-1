@@ -17,6 +17,7 @@ namespace Assignment
     public partial class Form1 : Form
     {
         TableLayoutPanel table;
+        MenuStrip menu;
         GameControlModel model;
         int _mapSize;
         int shipNumber;
@@ -33,6 +34,8 @@ namespace Assignment
         Position player;
         List<Elem> ships;
         List<Elem> bombs;
+
+        int gameTime = -1;
 
         #region
 
@@ -67,6 +70,59 @@ namespace Assignment
             {
                 model.PlayerMove(Model.Move.Down);
             }
+        }
+
+        void OnLoadGameEvent(object sender, LoadGameEvent e)
+        {
+            if (this.InvokeRequired)
+            {
+                LoadGameCall lGame = new LoadGameCall(PrepareLoad);
+                this.Invoke(lGame, new object[] { e.MapSize, e.PlayerX, e.PlayerY });
+            }
+            else
+                PrepareLoad(e.MapSize, e.PlayerX, e.PlayerY);
+        }
+
+        void PrepareLoad(int mapSize, int playerX, int playerY)
+        {
+            _mapSize = mapSize;
+            elements = new BaseButton[_mapSize, _mapSize];
+            this.Controls.Clear();
+            menu = new MenuStrip();
+            menu.Items.Add("Start Game");
+            menu.Items[0].Enabled = false;
+            menu.Items[0].Click += new EventHandler(OnGameStartEvent);
+            menu.Items.Add("Stop Game");
+            menu.Items[1].Click += new EventHandler(OnGameStopEvent);
+            menu.Items.Add("Save Game");
+            menu.Items[2].Enabled = false;
+            menu.Items[2].Click += new EventHandler(OnGameSaveEvent);
+
+
+            table = new TableLayoutPanel();
+            table.RowCount = _mapSize;
+            table.ColumnCount = _mapSize;
+            table.Dock = DockStyle.Fill;
+            for (int i = 0; i < _mapSize; i++)
+            {
+                var percent = 100f / (float)_mapSize;
+                table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, percent));
+                table.RowStyles.Add(new RowStyle(SizeType.Percent, percent));
+            }
+            this.Controls.Add(table);
+            this.Controls.Add(menu);
+
+            for (int i = 0; i < _mapSize; i++)
+            {
+                for (int j = 0; j < _mapSize; j++)
+                {
+                    var baseElem = new BaseButton(baseColor);
+                    elements[i, j] = baseElem;
+                    table.Controls.Add(baseElem, i, j);
+                }
+            }
+            player.SetPosition(playerX, playerY);
+            elements[player._x, player._y].BackColor = playerColor;
         }
 
         void OnPlayerMoveEvent(object sender, PlayerMoveEvent e)
@@ -125,6 +181,8 @@ namespace Assignment
                 return;
             int find = FindElem(bombs, e.ID);
             var b = bombs[find];
+            if (elements[b.Position._x, b.Position._y] == null)
+                return;
             elements[b.Position._x, b.Position._y].BackColor = baseColor;
             b.Position = e.Position;
             Color bombColor = Color.White;
@@ -148,6 +206,7 @@ namespace Assignment
         void OnGameOverEvent(object sender, GameOverEvent e)
         {
             Console.WriteLine("GameOver");
+            gameTime = model.gameTime;
             AskGameStart();
         }
 
@@ -159,9 +218,55 @@ namespace Assignment
             bombs.RemoveAt(ind);
         }
 
+        void OnGameStopEvent(object sender, EventArgs e)
+        {
+            Console.WriteLine("Game Stop");            
+            model.StopGame();
+            menu.Items[0].Enabled = true;
+            menu.Items[1].Enabled = false;
+            menu.Items[2].Enabled = true;
+
+        }
+
+        void OnGameStartEvent(object sender, EventArgs e)
+        {
+            Console.WriteLine("Game Start");
+            model.StartGame();
+            menu.Items[0].Enabled = false;
+            menu.Items[1].Enabled = true;
+            menu.Items[2].Enabled = false;
+
+        }
+
+        void OnGameSaveEvent(object sender, EventArgs e)
+        {
+            Console.WriteLine("Game Save");
+            SaveFileDialog sFile = new SaveFileDialog();
+            sFile.Filter = "Save files (*.saveGame)|*.saveGame";
+            sFile.ShowDialog();
+            string fileName = sFile.FileName;
+            Console.WriteLine(fileName);
+            if (fileName != "")
+                model.SaveGame(fileName);
+        }
+
+       
+
 
         #endregion
+
+        void LoadGame(string fileName)
+        {
+            model.LoadGame(fileName);
+            model.StartGame();           
+        }
+
+
         delegate void NewGameCall();
+        delegate void CloseGame();
+        delegate void LoadGameCall(int mapSize, int playerX, int playerY);
+
+
 
         void CheckCall()
         {
@@ -175,17 +280,42 @@ namespace Assignment
                 NewGame();
             }
         }
+
+        void CheckClose()
+        {
+            if(this.InvokeRequired)
+            {
+                CloseGame gClose = new CloseGame(this.Close);
+            }
+            else
+            {
+                this.Close();
+            }
+        }
+
         void AskGameStart()
         {
-            using (AskGameStart dial = new View.AskGameStart())
+            bool closeGame;
+            string loadGame = "";
+            using (AskGameStart dial = new View.AskGameStart(gameTime))
             {
                 dial.ShowDialog();
                 Console.WriteLine(dial.ShipNumber);
                 Console.WriteLine(dial.MapSize);
-                _mapSize = dial.MapSize;
                 shipNumber = dial.ShipNumber;
+                closeGame = dial.CloseGame;
+                loadGame = dial.LoadGame;
+                _mapSize = dial.MapSize;
             }
-            CheckCall();
+            if (loadGame != "")
+                LoadGame(loadGame);
+
+            else if (closeGame)
+            {
+                CheckClose();
+            }
+            else
+                CheckCall();
         }
 
 
@@ -204,6 +334,7 @@ namespace Assignment
             model.shipMove += new EventHandler<ShipMoveEvent>(OnShipMoveEvent);
             model.bombMove += new EventHandler<BombMoveEvent>(OnBombMoveEvent);
             model.gameOver += new EventHandler<GameOverEvent>(OnGameOverEvent);
+            model.loadGame += new EventHandler<LoadGameEvent>(OnLoadGameEvent);
             model.bombRemove += new EventHandler<BombRemoveEvent>(OnBombRemoveEvent);
             model.shipCreate += new EventHandler<ShipCreateEvent>(OnShipCreateEvent);
             model.bombCreate += new EventHandler<BombCreateEvent>(OnBombCreateEvent);
@@ -211,6 +342,7 @@ namespace Assignment
             player = new Position();
             ships = new List<Elem>();
             bombs = new List<Elem>();
+
             baseColor = Color.AliceBlue;
             shipColor = Color.Orange;
             playerColor = Color.LimeGreen;
@@ -228,6 +360,17 @@ namespace Assignment
         {
             elements = new BaseButton[_mapSize, _mapSize];
             this.Controls.Clear();
+            menu = new MenuStrip();
+            menu.Items.Add("Start Game");
+            menu.Items[0].Enabled = false;
+            menu.Items[0].Click += new EventHandler(OnGameStartEvent);
+            menu.Items.Add("Stop Game");
+            menu.Items[1].Click += new EventHandler(OnGameStopEvent);
+            menu.Items.Add("Save Game");
+            menu.Items[2].Enabled = false;
+            menu.Items[2].Click += new EventHandler(OnGameSaveEvent);
+
+
             table = new TableLayoutPanel();
             table.RowCount = _mapSize;
             table.ColumnCount = _mapSize;
@@ -239,6 +382,7 @@ namespace Assignment
                 table.RowStyles.Add(new RowStyle(SizeType.Percent, percent));
             }
             this.Controls.Add(table);
+            this.Controls.Add(menu);
 
             for (int i = 0; i < _mapSize; i++)
             {

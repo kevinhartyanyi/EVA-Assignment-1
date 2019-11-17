@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,10 +23,17 @@ namespace Assignment.Model
         public int gameTime { get {return _gameTime; } }
         public bool isPlaying { get { return _gameTimer.Enabled; } }
 
+        public int mapSize { get { return _mapSize; } }
+
+        public int playerX {  get { return _player.Position._x; } }
+        public int playerY { get { return _player.Position._y; } }
+
+
         #region Events
         public EventHandler<ShipMoveEvent> shipMove;
         public EventHandler<BombMoveEvent> bombMove;
         public EventHandler<GameOverEvent> gameOver;
+        public EventHandler<LoadGameEvent> loadGame;
         public EventHandler<ShipCreateEvent> shipCreate;
         public EventHandler<BombCreateEvent> bombCreate;
         public EventHandler<BombRemoveEvent> bombRemove;
@@ -71,8 +79,8 @@ namespace Assignment.Model
 
                 if (bomb.Pos._y >= _mapSize)
                 {
-                    OnBombRemoveEvent(bomb);
                     _bombs.RemoveAt(ind);
+                    OnBombRemoveEvent(bomb);
                 }
                 else
                 {
@@ -226,14 +234,106 @@ namespace Assignment.Model
             StartGame();
         }
 
-        public void SaveGame()
+        public void SaveGame(string fileName)
         {
+            using (StreamWriter writer = new StreamWriter(fileName))
+            {
+                writer.WriteLine(_gameTime);
+                writer.WriteLine(_difficultyTimer.Interval);
+                writer.WriteLine(_mapSize);
+                writer.WriteLine(_player.Position._x);
+                writer.WriteLine(_player.Position._y);
+                writer.WriteLine(_ships.Count);
+                foreach (var s in _ships)
+                {
+                    writer.WriteLine(s.ID);
+                    writer.WriteLine(s.Pos._x);
+                    writer.WriteLine(s.Pos._y);
+                    writer.WriteLine(s.Direction);
+                }
+                writer.WriteLine(_bombIDCount);
+                writer.WriteLine(_bombs.Count);
+                foreach (var b in _bombs)
+                {
+                    writer.WriteLine(b.ID);
+                    writer.WriteLine(b.Pos._x);
+                    writer.WriteLine(b.Pos._y);
+                    writer.WriteLine(b.bombType);
+                }
 
+            }
         }
 
-        public void LoadGame()
+        public void LoadGame(string fileName)
         {
+            _ships.Clear();
+            _bombs.Clear();
 
+            int playerX;
+            int playerY;
+            int shipNumber;
+            int bombNumber;
+            using (StreamReader reader = new StreamReader(fileName))
+            {
+                _gameTime = Int32.Parse(reader.ReadLine());
+                _gameTimer.Enabled = false;
+                _difficultyTimer.Interval = Int32.Parse(reader.ReadLine());
+                _difficultyTimer.Enabled = false;
+                _mapSize = Int32.Parse(reader.ReadLine());
+                playerX = Int32.Parse(reader.ReadLine());
+                playerY = Int32.Parse(reader.ReadLine());
+                shipNumber = Int32.Parse(reader.ReadLine());
+                Console.WriteLine(_gameTime);
+                Console.WriteLine(_difficultyTimer.Interval);
+                Console.WriteLine(_mapSize);
+                if (loadGame != null)
+                    loadGame(this, new LoadGameEvent(_mapSize, playerX, playerY));
+                Console.WriteLine(playerX);
+                Console.WriteLine(playerY);
+                Console.WriteLine(shipNumber);
+
+                for (int i = 0; i < shipNumber; i++)
+                {
+                    int id = Int32.Parse(reader.ReadLine());
+                    int xPos = Int32.Parse(reader.ReadLine());
+                    int yPos = Int32.Parse(reader.ReadLine());
+                    Direction direct;
+                    direct = (Direction)Enum.Parse(typeof(Direction), reader.ReadLine());
+                    Console.WriteLine(id);
+                    Console.WriteLine(xPos);
+                    Console.WriteLine(yPos);
+                    Console.WriteLine(direct);
+
+                    Ship nShip = new Ship(xPos, yPos, direct, _mapSize, id);
+                    _ships.Add(nShip);
+                    OnShipCreateEvent(nShip);
+                }
+                _bombIDCount = Int32.Parse(reader.ReadLine());
+                bombNumber = Int32.Parse(reader.ReadLine());
+                Console.WriteLine(_bombIDCount);
+                Console.WriteLine(bombNumber);
+
+
+                for (int i = 0; i < bombNumber; i++)
+                {
+                    int id = Int32.Parse(reader.ReadLine());
+                    int xPos = Int32.Parse(reader.ReadLine());
+                    int yPos = Int32.Parse(reader.ReadLine());
+                    Bomb_Type bombType;
+                    bombType = (Bomb_Type)Enum.Parse(typeof(Bomb_Type), reader.ReadLine());
+                    Console.WriteLine(id);
+                    Console.WriteLine(xPos);
+                    Console.WriteLine(yPos);
+                    Console.WriteLine(bombType);
+
+                    Bomb nBomb = new Bomb(new Position(xPos, yPos), bombType, id, _mapSize);
+                    _bombs.Add(nBomb);
+                    nBomb.bombStep += new EventHandler<BombStepEvent>(OnBombStepEvent);
+                    OnBombCreateEvent(nBomb);
+                }
+            }            
+            _player = new Player(playerX, playerY, _mapSize);
+            
         }
     }
 }

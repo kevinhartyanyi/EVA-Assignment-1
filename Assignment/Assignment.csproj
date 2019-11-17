@@ -54,6 +54,7 @@
     <Compile Include="Model\Elem.cs" />
     <Compile Include="Model\GameControlModel.cs" />
     <Compile Include="Model\GameOverEvent.cs" />
+    <Compile Include="Model\LoadGameEvent.cs" />
     <Compile Include="Model\Player.cs" />
     <Compile Include="Model\PlayerMoveEvent.cs" />
     <Compile Include="Model\Position.cs" />
