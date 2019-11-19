@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Assignment.Model
 {
     public enum Move { Up, Down, Left, Right}
-    class Player
+    public class Player
     {
         private Position _pos;
         private int _mapSize;

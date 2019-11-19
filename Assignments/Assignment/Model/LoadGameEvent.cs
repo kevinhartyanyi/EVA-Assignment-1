@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Assignment.Model
 {
-    class LoadGameEvent : EventArgs
+    public class LoadGameEvent : EventArgs
     {
         public int MapSize { get; private set; }
         public int PlayerX { get; private set; }

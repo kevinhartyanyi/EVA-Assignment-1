@@ -6,13 +6,15 @@ using System.Threading.Tasks;
 
 namespace Assignment.Model
 {
-    class BombRemoveEvent : EventArgs
+    public class BombStepEvent : EventArgs
     {
         public int ID { get; private set; }
+        public Position Position { get; private set; }
 
-        public BombRemoveEvent(int id)
+        public BombStepEvent(int id, Position pos)
         {
             ID = id;
+            Position = pos;
         }
     }
 }

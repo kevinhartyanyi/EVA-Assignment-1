@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Assignment.Model
 {
-    class Position
+    public class Position
     {
         public int _x;
         public int _y;

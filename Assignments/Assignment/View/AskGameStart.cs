@@ -88,6 +88,7 @@ namespace Assignment.View
 
             mapSize = new NumericUpDown();
             mapSize.Minimum = 5;
+            mapSize.Maximum = 10;
             mapSize.Value = 10;
             mapSize.Dock = DockStyle.Bottom;
             mapSize.ValueChanged += new EventHandler(OnMapSizeChanged);

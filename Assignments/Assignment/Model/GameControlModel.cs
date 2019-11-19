@@ -8,8 +8,9 @@ using System.Timers;
 
 namespace Assignment.Model
 {
-    class GameControlModel
+    public class GameControlModel
     {
+        #region Fields
         private Timer _gameTimer;
         private int _gameTime;
         private int _mapSize;
@@ -19,14 +20,27 @@ namespace Assignment.Model
         private int _bombIDCount;
         private List<Bomb> _bombs;
         private Timer _difficultyTimer;
+        private Data.IData _data;
+        #endregion
 
+        #region Property
         public int gameTime { get {return _gameTime; } }
+        public double difficultyTime { get { return _difficultyTimer.Interval; } }
         public bool isPlaying { get { return _gameTimer.Enabled; } }
 
         public int mapSize { get { return _mapSize; } }
 
         public int playerX {  get { return _player.Position._x; } }
         public int playerY { get { return _player.Position._y; } }
+        public int shipCount { get { return _ships.Count; } }
+        public List<Ship> ships { get { return _ships; } }
+        public List<Bomb> bombs { get { return _bombs; } }
+
+        public int bombID { get { return _bombIDCount; } }
+
+        #endregion
+
+
 
 
         #region Events
@@ -40,16 +54,6 @@ namespace Assignment.Model
         public EventHandler<PlayerMoveEvent> playerMove;
 
         
-        public int FindBomb(List<Bomb> cont, int id) 
-        {
-            int re = -1;
-            for (int i = 0; i < cont.Count; i++)
-            {
-                if (cont[i].ID == id)
-                    re = i;
-            }
-            return re;
-        }
 
         private void OnShipMoveEvent(Ship ship)
         {
@@ -59,7 +63,7 @@ namespace Assignment.Model
 
         private void OnShipCreateEvent(Ship ship)
         {
-            if (ship != null)
+            if (shipCreate != null)
                 shipCreate(this, new ShipCreateEvent(ship.ID, new Position(ship.Pos)));
         }
 
@@ -99,6 +103,7 @@ namespace Assignment.Model
         {
             if (bombMove != null)
                 bombCreate(this, new BombCreateEvent(bomb.ID, new Position(bomb.Pos), bomb.bombType));
+            CheckCollision();
         }
 
         private void OnBombRemoveEvent(Bomb bomb)
@@ -135,13 +140,28 @@ namespace Assignment.Model
         }
 
         #endregion
+
+        //Helper function, returns Bomb index if exists
+        public int FindBomb(List<Bomb> cont, int id)
+        {
+            int re = -1;
+            for (int i = 0; i < cont.Count; i++)
+            {
+                if (cont[i].ID == id)
+                    re = i;
+            }
+            return re;
+        }
+        // Moves the player
         public void PlayerMove(Move direct)
         {
             _player.Move(direct);
             CheckCollision();
-            playerMove(this, new PlayerMoveEvent(new Position(_player.Position)));
+            if (playerMove != null)
+                playerMove(this, new PlayerMoveEvent(new Position(_player.Position)));
         }
 
+        //Check if the player has collided with a bomb
         private void CheckCollision()
         {
             foreach (var b in _bombs)
@@ -154,6 +174,7 @@ namespace Assignment.Model
             }
         }
 
+        //Move ships
         private void MoveShips()
         {
             foreach (var s in _ships)
@@ -164,7 +185,7 @@ namespace Assignment.Model
             }
         }       
 
-       public GameControlModel()
+       public GameControlModel(Data.IData gcData)
         {
             _gameTimer = new Timer(1000);
             _gameTimer.Elapsed += new ElapsedEventHandler(OnTimerElapsed);
@@ -173,9 +194,10 @@ namespace Assignment.Model
             _bombs = new List<Bomb>();
             _difficultyTimer = new Timer(1000);
             _difficultyTimer.Elapsed += new ElapsedEventHandler(OnDifficultyTimerElapsed);
-
+            _data = gcData;
         }
 
+        //Pause
         public void StopGame()
         {
             _gameTimer.Enabled = false;
@@ -185,6 +207,8 @@ namespace Assignment.Model
                 b.Stop();
             }
         }
+        
+        //Continue
         public void StartGame()
         {
             if (_gameTimer.Enabled)
@@ -236,104 +260,47 @@ namespace Assignment.Model
 
         public void SaveGame(string fileName)
         {
-            using (StreamWriter writer = new StreamWriter(fileName))
-            {
-                writer.WriteLine(_gameTime);
-                writer.WriteLine(_difficultyTimer.Interval);
-                writer.WriteLine(_mapSize);
-                writer.WriteLine(_player.Position._x);
-                writer.WriteLine(_player.Position._y);
-                writer.WriteLine(_ships.Count);
-                foreach (var s in _ships)
-                {
-                    writer.WriteLine(s.ID);
-                    writer.WriteLine(s.Pos._x);
-                    writer.WriteLine(s.Pos._y);
-                    writer.WriteLine(s.Direction);
-                }
-                writer.WriteLine(_bombIDCount);
-                writer.WriteLine(_bombs.Count);
-                foreach (var b in _bombs)
-                {
-                    writer.WriteLine(b.ID);
-                    writer.WriteLine(b.Pos._x);
-                    writer.WriteLine(b.Pos._y);
-                    writer.WriteLine(b.bombType);
-                }
-
-            }
+            _data.Save(fileName, this);
         }
 
         public void LoadGame(string fileName)
         {
-            _ships.Clear();
-            _bombs.Clear();
-
-            int playerX;
-            int playerY;
-            int shipNumber;
-            int bombNumber;
-            using (StreamReader reader = new StreamReader(fileName))
+            _ships = new List<Ship>();
+            _bombs = new List<Bomb>();
+            ModelValues values = _data.Load(fileName);
+            _gameTime = values.gameTime;
+            _gameTimer.Enabled = false;
+            _difficultyTimer.Interval = values.difficultyTime;
+            _difficultyTimer.Enabled = false;
+            _mapSize = values.mapSize;
+            int playerX = values.playerX;
+            int playerY = values.playerY;
+            Console.WriteLine(_gameTime);
+            Console.WriteLine(_difficultyTimer.Interval);
+            Console.WriteLine(_mapSize);
+            if (loadGame != null)
+                loadGame(this, new LoadGameEvent(_mapSize, playerX, playerY));
+            Console.WriteLine(playerX);
+            Console.WriteLine(playerY);
+            _ships = values.ships;
+            foreach (var s in _ships)
             {
-                _gameTime = Int32.Parse(reader.ReadLine());
-                _gameTimer.Enabled = false;
-                _difficultyTimer.Interval = Int32.Parse(reader.ReadLine());
-                _difficultyTimer.Enabled = false;
-                _mapSize = Int32.Parse(reader.ReadLine());
-                playerX = Int32.Parse(reader.ReadLine());
-                playerY = Int32.Parse(reader.ReadLine());
-                shipNumber = Int32.Parse(reader.ReadLine());
-                Console.WriteLine(_gameTime);
-                Console.WriteLine(_difficultyTimer.Interval);
-                Console.WriteLine(_mapSize);
-                if (loadGame != null)
-                    loadGame(this, new LoadGameEvent(_mapSize, playerX, playerY));
-                Console.WriteLine(playerX);
-                Console.WriteLine(playerY);
-                Console.WriteLine(shipNumber);
+                OnShipCreateEvent(s);
+            }
 
-                for (int i = 0; i < shipNumber; i++)
-                {
-                    int id = Int32.Parse(reader.ReadLine());
-                    int xPos = Int32.Parse(reader.ReadLine());
-                    int yPos = Int32.Parse(reader.ReadLine());
-                    Direction direct;
-                    direct = (Direction)Enum.Parse(typeof(Direction), reader.ReadLine());
-                    Console.WriteLine(id);
-                    Console.WriteLine(xPos);
-                    Console.WriteLine(yPos);
-                    Console.WriteLine(direct);
+            _bombIDCount = values.bombID;
+            Console.WriteLine(_bombIDCount);
 
-                    Ship nShip = new Ship(xPos, yPos, direct, _mapSize, id);
-                    _ships.Add(nShip);
-                    OnShipCreateEvent(nShip);
-                }
-                _bombIDCount = Int32.Parse(reader.ReadLine());
-                bombNumber = Int32.Parse(reader.ReadLine());
-                Console.WriteLine(_bombIDCount);
-                Console.WriteLine(bombNumber);
+            _bombs = values.bombs;
 
-
-                for (int i = 0; i < bombNumber; i++)
-                {
-                    int id = Int32.Parse(reader.ReadLine());
-                    int xPos = Int32.Parse(reader.ReadLine());
-                    int yPos = Int32.Parse(reader.ReadLine());
-                    Bomb_Type bombType;
-                    bombType = (Bomb_Type)Enum.Parse(typeof(Bomb_Type), reader.ReadLine());
-                    Console.WriteLine(id);
-                    Console.WriteLine(xPos);
-                    Console.WriteLine(yPos);
-                    Console.WriteLine(bombType);
-
-                    Bomb nBomb = new Bomb(new Position(xPos, yPos), bombType, id, _mapSize);
-                    _bombs.Add(nBomb);
-                    nBomb.bombStep += new EventHandler<BombStepEvent>(OnBombStepEvent);
-                    OnBombCreateEvent(nBomb);
-                }
-            }            
-            _player = new Player(playerX, playerY, _mapSize);
+            foreach (var b in _bombs)
+            {
+                b.bombStep += new EventHandler<BombStepEvent>(OnBombStepEvent);
+                OnBombCreateEvent(b);
+            }
             
+            _player = new Player(playerX, playerY, _mapSize);
+        
         }
     }
 }

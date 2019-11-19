@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace Assignment.Model
 {
-    class ShipCreateEvent : EventArgs
+    public class ShipMoveEvent : EventArgs
     {
         public int ID { get; private set; }
         public Position Position { get; private set; }
 
-        public ShipCreateEvent(int id, Position pos)
+        public ShipMoveEvent(int x, int y, int id)
         {
+            Position = new Position(x, y);
             ID = id;
-            Position = pos;
         }
     }
 }

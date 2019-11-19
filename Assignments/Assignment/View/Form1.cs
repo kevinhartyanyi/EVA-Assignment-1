@@ -16,6 +16,7 @@ namespace Assignment
 {
     public partial class Form1 : Form
     {
+        #region Fields
         TableLayoutPanel table;
         MenuStrip menu;
         GameControlModel model;
@@ -36,20 +37,13 @@ namespace Assignment
         List<Elem> bombs;
 
         int gameTime = -1;
+        #endregion
 
-        #region
+        #region Events
 
-        int FindElem(List<Elem> cont, int id)
-        {
-            int re = -1;
-            for (int i = 0; i < cont.Count; i++)
-            {
-                if (cont[i].ID == id)
-                    re = i;
-            }
-            return re;
-        }
+        
 
+        //Player Controll
         void OnKeyDownEvent(object sender, KeyPressEventArgs e)
         {
             if (!model.isPlaying)
@@ -250,10 +244,22 @@ namespace Assignment
                 model.SaveGame(fileName);
         }
 
-       
+
 
 
         #endregion
+
+        //Helper function, returns index of Elem if exists
+        int FindElem(List<Elem> cont, int id)
+        {
+            int re = -1;
+            for (int i = 0; i < cont.Count; i++)
+            {
+                if (cont[i].ID == id)
+                    re = i;
+            }
+            return re;
+        }
 
         void LoadGame(string fileName)
         {
@@ -261,12 +267,11 @@ namespace Assignment
             model.StartGame();           
         }
 
-
+        // Cross-thread safe
+        #region
         delegate void NewGameCall();
         delegate void CloseGame();
         delegate void LoadGameCall(int mapSize, int playerX, int playerY);
-
-
 
         void CheckCall()
         {
@@ -285,17 +290,21 @@ namespace Assignment
         {
             if(this.InvokeRequired)
             {
+                CloseGame dClose = new CloseGame(this.Dispose);
                 CloseGame gClose = new CloseGame(this.Close);
             }
             else
             {
-                this.Close();
+                this.Dispose();
+                this.Close();                
             }
         }
+        #endregion
 
+        // Ask parameters for game / show results
         void AskGameStart()
         {
-            bool closeGame;
+            bool closeGame = true;
             string loadGame = "";
             using (AskGameStart dial = new View.AskGameStart(gameTime))
             {
@@ -307,9 +316,9 @@ namespace Assignment
                 loadGame = dial.LoadGame;
                 _mapSize = dial.MapSize;
             }
+            Console.WriteLine("Close: " + closeGame);
             if (loadGame != "")
                 LoadGame(loadGame);
-
             else if (closeGame)
             {
                 CheckClose();
@@ -328,9 +337,10 @@ namespace Assignment
             AskGameStart();
         }
 
+        // Inicialise
         void Start()
         {           
-            model = new GameControlModel();
+            model = new GameControlModel(new Assignment.Data.Data());
             model.shipMove += new EventHandler<ShipMoveEvent>(OnShipMoveEvent);
             model.bombMove += new EventHandler<BombMoveEvent>(OnBombMoveEvent);
             model.gameOver += new EventHandler<GameOverEvent>(OnGameOverEvent);

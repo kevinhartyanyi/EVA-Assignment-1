@@ -8,7 +8,7 @@ using System.Timers;
 namespace Assignment.Model
 {
     public enum Bomb_Type { Light, Medium, Heavy }
-    class Bomb
+    public class Bomb
     {
         private Position _pos;
         private Timer bTimer;

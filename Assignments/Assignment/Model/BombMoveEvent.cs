@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Assignment.Model
 {
-    class BombMoveEvent : EventArgs
+    public class BombMoveEvent : EventArgs
     {
         public int ID { get; private set; }
         public Position Position { get; private set; }

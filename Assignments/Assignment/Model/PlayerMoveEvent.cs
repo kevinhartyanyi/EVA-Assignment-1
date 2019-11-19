@@ -6,15 +6,13 @@ using System.Threading.Tasks;
 
 namespace Assignment.Model
 {
-    class ShipMoveEvent : EventArgs
+    public class PlayerMoveEvent : EventArgs
     {
-        public int ID { get; private set; }
         public Position Position { get; private set; }
 
-        public ShipMoveEvent(int x, int y, int id)
+        public PlayerMoveEvent(Position pos)
         {
-            Position = new Position(x, y);
-            ID = id;
+            Position = pos;
         }
     }
 }

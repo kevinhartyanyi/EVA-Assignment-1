@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Assignment.Model
 {
-    class GameOverEvent : EventArgs
+    public class GameOverEvent : EventArgs
     {
         public int gameTime;
 

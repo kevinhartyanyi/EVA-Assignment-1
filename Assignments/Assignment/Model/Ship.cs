@@ -8,7 +8,7 @@ namespace Assignment.Model
 {
     
     public enum Direction { Left, Right }
-    class Ship
+    public class Ship
     {
         #region Members
 
